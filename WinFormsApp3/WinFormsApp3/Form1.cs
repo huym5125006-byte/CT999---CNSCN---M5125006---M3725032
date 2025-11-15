@@ -148,6 +148,61 @@ namespace WinFormsApp3
             return value;
         }
 
+// Sinh câu trả lời giả lập
+        private string GenerateFakeAnswer(string question)
+        {
+            if (question.Contains("AI", StringComparison.OrdinalIgnoreCase))
+                return "AI (Artificial Intelligence) là trí tuệ nhân tạo – khả năng của máy tính mô phỏng tư duy con người.";
+            if (question.Contains("C#", StringComparison.OrdinalIgnoreCase))
+                return "C# là ngôn ngữ lập trình hướng đối tượng do Microsoft phát triển.";
+            if (question.Contains("OOP", StringComparison.OrdinalIgnoreCase))
+                return "OOP là lập trình hướng đối tượng, gồm 4 nguyên lý chính: kế thừa, đa hình, đóng gói và trừu tượng hóa.";
+            if (question.Contains("hello", StringComparison.OrdinalIgnoreCase))
+                return "Xin chào! Tôi là GPT offline – trợ lý ảo của bạn 😄";
+
+            return "Tôi là GPT offline – câu hỏi của bạn rất thú vị!";
+        }
+
+        // Ghi thêm câu hỏi & câu trả lời vào file CSV nếu chưa có
+        // Ghi thêm câu hỏi & câu trả lời vào file CSV nếu chưa có
+        private void AppendToCsv(string filePath, string question, string answer)
+        {
+            // Ensure table has minimal expected columns when empty
+            if (questionTable.Columns.Count == 0)
+            {
+                questionTable.Columns.Add("Id");
+                questionTable.Columns.Add("Question");
+                questionTable.Columns.Add("Answer");
+            }
+
+            int qIdx = GetColumnIndex("Question");
+            if (qIdx == -1 && questionTable.Columns.Count >= 2)
+                qIdx = 1;
+
+            bool exists = questionTable.AsEnumerable().Any(r =>
+                string.Equals(r[qIdx]?.ToString(), question, StringComparison.OrdinalIgnoreCase));
+
+            if (!exists)
+            {
+                int newId = questionTable.Rows.Count + 1;
+                string newLine = $"{newId},{EscapeForCsv(question)},{EscapeForCsv(answer)}";
+                File.AppendAllText(filePath, Environment.NewLine + newLine);
+
+                // Add to in-memory table safely: create values array matching columns count
+                var values = new object[questionTable.Columns.Count];
+                values[0] = newId.ToString();
+                if (qIdx >= 0 && qIdx < values.Length) values[qIdx] = question;
+                int aIdx = GetColumnIndex("Answer");
+                if (aIdx == -1 && questionTable.Columns.Count >= 3) aIdx = 2;
+                if (aIdx >= 0 && aIdx < values.Length) values[aIdx] = answer;
+
+                // Fill any remaining fields with empty string
+                for (int i = 0; i < values.Length; i++)
+                    values[i] = values[i] ?? string.Empty;
+
+                questionTable.Rows.Add(values);
+            }
+        }
         private void button3_Click(object sender, EventArgs e)
         {
             txtQuestion.Clear();
